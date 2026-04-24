@@ -1,17 +1,21 @@
 use std::sync::{Arc, Mutex};
 use std::thread;
+#[cfg(target_os = "windows")]
 use std::time::Duration;
 
 use chrono::{DateTime, Utc};
 use tauri::{AppHandle, Emitter, Manager, State};
 
+#[cfg(target_os = "windows")]
+use crate::context_extractor::extract_context;
 use crate::{
-    context_extractor::extract_context,
     error::AppError,
     task_store::AppState,
-    types::{Context, SaveItemPayload, Source, TextSelectedPayload},
+    types::{SaveItemPayload, Source, TextSelectedPayload},
     window_manager,
 };
+#[cfg(target_os = "windows")]
+use crate::types::Context;
 
 // ── Cached selection state ────────────────────────────────────────────────────
 

@@ -64,7 +64,6 @@ fn create_overlay_window(app: &AppHandle) -> Result<WebviewWindow, AppError> {
         WebviewUrl::App("index.html#overlay".into()),
     )
     .title("TextClip Overlay")
-    .transparent(true)
     .decorations(false)
     .shadow(false)
     .always_on_top(true)
@@ -130,7 +129,6 @@ fn ensure_spotlight_window(app: &AppHandle) -> Result<WebviewWindow, AppError> {
         WebviewUrl::App("index.html#spotlight".into()),
     )
     .title("TextClip Search")
-    .transparent(true)
     .decorations(false)
     .shadow(true)
     .always_on_top(true)
@@ -154,7 +152,6 @@ fn ensure_screenshot_window(app: &AppHandle) -> Result<WebviewWindow, AppError> 
         WebviewUrl::App("index.html#screenshot-ocr".into()),
     )
     .title("TextClip Screenshot OCR")
-    .transparent(true)
     .decorations(false)
     .shadow(false)
     .always_on_top(true)
