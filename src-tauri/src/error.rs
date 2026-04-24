@@ -2,6 +2,7 @@ use serde::Serialize;
 use thiserror::Error;
 
 /// 统一错误类型，覆盖应用所有错误场景
+#[allow(dead_code)]
 #[derive(Debug, Error, Serialize)]
 #[serde(tag = "type", content = "message")]
 pub enum AppError {
@@ -63,6 +64,7 @@ impl From<serde_json::Error> for AppError {
 }
 
 /// 记录可恢复错误，不中断主流程
+#[allow(dead_code)]
 pub fn log_error(error: &AppError) {
     eprintln!("[AppError] {}", error);
 }

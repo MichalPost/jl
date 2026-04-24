@@ -575,6 +575,7 @@ fn emit_selection_from_ocr(
     Ok(())
 }
 
+#[cfg(target_os = "windows")]
 fn run_windows_ocr_script(image_path: &Path, language: &str) -> Result<String, AppError> {
     let script = format!(
         r#"

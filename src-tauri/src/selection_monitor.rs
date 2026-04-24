@@ -210,12 +210,14 @@ fn capture_source_windows() -> Source {
     }
 }
 
+#[cfg(target_os = "windows")]
 pub fn capture_context(full_text: Option<&str>, selection: &str) -> Context {
     full_text
         .map(|text| extract_context(text, selection))
         .unwrap_or_default()
 }
 
+#[cfg(target_os = "windows")]
 pub fn build_text_selected_payload(
     raw_text: &str,
     x: f64,
@@ -241,6 +243,7 @@ pub fn build_text_selected_payload(
 
 /// Attempt to read text from the system clipboard.
 /// Returns `None` on any failure; errors are logged silently.
+#[cfg(target_os = "windows")]
 fn try_read_clipboard(app: &AppHandle) -> Option<String> {
     use tauri_plugin_clipboard_manager::ClipboardExt;
     match app.clipboard().read_text() {
@@ -262,27 +265,23 @@ fn try_read_clipboard(app: &AppHandle) -> Option<String> {
 
 /// Returns the current cursor position as (x, y).
 /// Falls back to (0.0, 0.0) if the platform API is unavailable.
+#[cfg(target_os = "windows")]
 fn get_cursor_position() -> (f64, f64) {
-    // On Windows we can query the cursor position via the Win32 API.
-    // On other platforms we fall back to (0, 0) for now.
-    #[cfg(target_os = "windows")]
-    {
-        use std::mem::MaybeUninit;
-        // SAFETY: POINT is a plain C struct; GetCursorPos fills it in.
-        unsafe {
-            #[repr(C)]
-            struct POINT {
-                x: i32,
-                y: i32,
-            }
-            extern "system" {
-                fn GetCursorPos(lpPoint: *mut POINT) -> i32;
-            }
-            let mut pt = MaybeUninit::<POINT>::uninit();
-            if GetCursorPos(pt.as_mut_ptr()) != 0 {
-                let pt = pt.assume_init();
-                return (pt.x as f64, pt.y as f64);
-            }
+    use std::mem::MaybeUninit;
+    // SAFETY: POINT is a plain C struct; GetCursorPos fills it in.
+    unsafe {
+        #[repr(C)]
+        struct POINT {
+            x: i32,
+            y: i32,
+        }
+        extern "system" {
+            fn GetCursorPos(lpPoint: *mut POINT) -> i32;
+        }
+        let mut pt = MaybeUninit::<POINT>::uninit();
+        if GetCursorPos(pt.as_mut_ptr()) != 0 {
+            let pt = pt.assume_init();
+            return (pt.x as f64, pt.y as f64);
         }
     }
     (0.0, 0.0)
@@ -292,6 +291,7 @@ fn get_cursor_position() -> (f64, f64) {
 
 /// Called after a left-button-up event is detected.
 /// Reads the clipboard, normalises the text, and emits `text-selected`.
+#[cfg(target_os = "windows")]
 fn handle_mouse_release(app: &AppHandle) {
     // Small delay so the OS has time to update the clipboard after selection.
     thread::sleep(Duration::from_millis(80));
