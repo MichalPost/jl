@@ -22,7 +22,17 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": "all",
     "icon": []
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxOTc1RkM5MTNFMjdCNDQKUldSRWUrSVR5VitYOGZ6NnIveVZjM3l1azJoOExLU1hEbW8ySTBLbGNOaTlhWjl5WjAvRnJTNHcK",
+      "endpoints": [
+        "https://github.com/MichalPost/jl/releases/latest/download/latest.json"
+      ],
+      "dialog": false
+    }
   }
 }

@@ -1,10 +1,11 @@
-import { useEffect, useMemo, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from "react"
+import { useEffect, useMemo, useState, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   CheckCircle2,
   Cpu,
+  Download,
   FolderOpenDot,
   Globe,
   LoaderCircle,
@@ -225,8 +226,30 @@ function getParsedFormValues(
   return settingsFormSchema.parse(values)
 }
 
+interface AvailableUpdate {
+  currentVersion: string
+  version: string
+  body?: string
+  date?: string
+}
+
+interface UpdateDownloadState {
+  stage: "idle" | "confirming" | "downloading" | "installing" | "restarting"
+  downloadedBytes: number
+  totalBytes: number | null
+}
+
 export function SettingsForm() {
   const queryClient = useQueryClient()
+  const [currentVersion, setCurrentVersion] = useState<string | null>(null)
+  const [availableUpdate, setAvailableUpdate] = useState<AvailableUpdate | null>(null)
+  const [checkingForUpdate, setCheckingForUpdate] = useState(false)
+  const [installingUpdate, setInstallingUpdate] = useState(false)
+  const [updateDownloadState, setUpdateDownloadState] = useState<UpdateDownloadState>({
+    stage: "idle",
+    downloadedBytes: 0,
+    totalBytes: null,
+  })
   const settingsQuery = useQuery({
     queryKey: ["settings"],
     queryFn: tauriApi.getSettings,
@@ -277,6 +300,32 @@ export function SettingsForm() {
     values.followSystemTheme,
     values.theme,
   ])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadVersion() {
+      const { isTauriEnvironment } = await import("@/lib/tauri")
+      if (!isTauriEnvironment()) {
+        if (!cancelled) {
+          setCurrentVersion("浏览器预览")
+        }
+        return
+      }
+
+      const { getVersion } = await import("@tauri-apps/api/app")
+      const version = await getVersion()
+      if (!cancelled) {
+        setCurrentVersion(version)
+      }
+    }
+
+    void loadVersion()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const ocrProvidersQuery = useQuery({
     queryKey: [
@@ -384,6 +433,149 @@ export function SettingsForm() {
     () => normalizeHexColor(values.customPrimaryColor) ?? "#2563eb",
     [values.customPrimaryColor],
   )
+  const downloadProgressPercent = useMemo(() => {
+    if (!updateDownloadState.totalBytes || updateDownloadState.totalBytes <= 0) {
+      return null
+    }
+
+    return Math.min(
+      100,
+      Math.round((updateDownloadState.downloadedBytes / updateDownloadState.totalBytes) * 100),
+    )
+  }, [updateDownloadState.downloadedBytes, updateDownloadState.totalBytes])
+  const downloadProgressLabel = useMemo(() => {
+    const downloadedMb = (updateDownloadState.downloadedBytes / 1024 / 1024).toFixed(1)
+    if (!updateDownloadState.totalBytes || updateDownloadState.totalBytes <= 0) {
+      return `${downloadedMb} MB`
+    }
+
+    const totalMb = (updateDownloadState.totalBytes / 1024 / 1024).toFixed(1)
+    return `${downloadedMb} / ${totalMb} MB`
+  }, [updateDownloadState.downloadedBytes, updateDownloadState.totalBytes])
+
+  async function handleCheckForUpdates() {
+    const { isTauriEnvironment } = await import("@/lib/tauri")
+    if (!isTauriEnvironment()) {
+      toast.message("浏览器预览模式不支持桌面端自动更新检查")
+      return
+    }
+
+    setCheckingForUpdate(true)
+    try {
+      const { check } = await import("@tauri-apps/plugin-updater")
+      const update = await check()
+
+      if (!update) {
+        setAvailableUpdate(null)
+        setUpdateDownloadState({
+          stage: "idle",
+          downloadedBytes: 0,
+          totalBytes: null,
+        })
+        toast.success("当前已是最新版本")
+        return
+      }
+
+      setAvailableUpdate({
+        currentVersion: update.currentVersion,
+        version: update.version,
+        body: update.body,
+        date: update.date,
+      })
+      setUpdateDownloadState({
+        stage: "confirming",
+        downloadedBytes: 0,
+        totalBytes: null,
+      })
+      toast.success(`发现新版本 v${update.version}`)
+    } catch (error) {
+      setAvailableUpdate(null)
+      setUpdateDownloadState({
+        stage: "idle",
+        downloadedBytes: 0,
+        totalBytes: null,
+      })
+      toast.error("检查更新失败", {
+        description: error instanceof Error ? error.message : "请稍后再试。",
+      })
+    } finally {
+      setCheckingForUpdate(false)
+    }
+  }
+
+  async function handleInstallUpdate() {
+    const { isTauriEnvironment } = await import("@/lib/tauri")
+    if (!isTauriEnvironment()) {
+      toast.message("浏览器预览模式不支持安装桌面更新")
+      return
+    }
+
+    setInstallingUpdate(true)
+    try {
+      const { check } = await import("@tauri-apps/plugin-updater")
+      const update = await check()
+
+      if (!update) {
+        setAvailableUpdate(null)
+        setUpdateDownloadState({
+          stage: "idle",
+          downloadedBytes: 0,
+          totalBytes: null,
+        })
+        toast.success("当前已是最新版本")
+        return
+      }
+
+      await update.downloadAndInstall((event) => {
+        if (event.event === "Started") {
+          setUpdateDownloadState({
+            stage: "downloading",
+            downloadedBytes: 0,
+            totalBytes: event.data.contentLength ?? null,
+          })
+          return
+        }
+
+        if (event.event === "Progress") {
+          setUpdateDownloadState((current) => ({
+            ...current,
+            stage: "downloading",
+            downloadedBytes: current.downloadedBytes + event.data.chunkLength,
+          }))
+          return
+        }
+
+        setUpdateDownloadState((current) => ({
+          ...current,
+          stage: "installing",
+        }))
+      })
+      setAvailableUpdate(null)
+      setUpdateDownloadState((current) => ({
+        ...current,
+        stage: "restarting",
+      }))
+      toast.success("更新已下载并安装", {
+        description: "应用即将自动重启以完成更新。",
+        duration: 2200,
+      })
+      const { relaunch } = await import("@tauri-apps/plugin-process")
+      window.setTimeout(() => {
+        void relaunch()
+      }, 900)
+    } catch (error) {
+      setUpdateDownloadState({
+        stage: availableUpdate ? "confirming" : "idle",
+        downloadedBytes: 0,
+        totalBytes: null,
+      })
+      toast.error("安装更新失败", {
+        description: error instanceof Error ? error.message : "请稍后再试。",
+      })
+    } finally {
+      setInstallingUpdate(false)
+    }
+  }
 
   const lastOcrResult = ocrTestMutation.data
   const errors = form.formState.errors
@@ -538,6 +730,148 @@ export function SettingsForm() {
                   <CheckCircle2 className="size-4" />
                   已同步到 `settings.json`
                 </span>
+              ) : null}
+            </div>
+
+            <div className="border-border/70 bg-bg/82 rounded-[22px] border p-4">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-muted text-xs tracking-[0.22em] uppercase">Updater</p>
+                  <p className="mt-2 text-sm font-medium">
+                    当前版本：{currentVersion ?? "读取中..."}
+                  </p>
+                  <p className="text-muted mt-1 text-sm leading-6">
+                    已接入 GitHub Release 更新源，客户端会先校验签名，再下载并安装更新包。
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    disabled={checkingForUpdate || installingUpdate}
+                    onClick={() => void handleCheckForUpdates()}
+                    className="border-border/70 hover:border-primary/50 bg-bg/90 inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-medium transition disabled:cursor-wait disabled:opacity-70"
+                  >
+                    {checkingForUpdate ? (
+                      <LoaderCircle className="size-4 animate-spin" />
+                    ) : (
+                      <RefreshCcw className="size-4" />
+                    )}
+                    检查更新
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!availableUpdate || checkingForUpdate || installingUpdate}
+                    onClick={() =>
+                      setUpdateDownloadState((current) => ({
+                        ...current,
+                        stage: "confirming",
+                      }))
+                    }
+                    className="bg-primary hover:bg-primary/90 inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {installingUpdate ? (
+                      <LoaderCircle className="size-4 animate-spin" />
+                    ) : (
+                      <Download className="size-4" />
+                    )}
+                    {availableUpdate ? `安装 v${availableUpdate.version}` : "暂无可安装更新"}
+                  </button>
+                </div>
+              </div>
+
+              {availableUpdate ? (
+                <div className="border-border/60 bg-surface/80 mt-4 rounded-[18px] border px-4 py-3">
+                  <p className="text-sm font-medium">可更新版本：v{availableUpdate.version}</p>
+                  <p className="text-muted mt-1 text-sm">
+                    当前为 v{availableUpdate.currentVersion}
+                    {availableUpdate.date ? ` · 发布于 ${availableUpdate.date}` : ""}
+                  </p>
+                  {availableUpdate.body ? (
+                    <p className="mt-3 text-sm leading-6 whitespace-pre-wrap">
+                      {availableUpdate.body}
+                    </p>
+                  ) : null}
+
+                  {updateDownloadState.stage === "confirming" ? (
+                    <div className="border-border/60 bg-bg/82 mt-4 rounded-[16px] border p-4">
+                      <p className="text-sm font-medium">准备下载并安装更新</p>
+                      <p className="text-muted mt-1 text-sm leading-6">
+                        安装完成后应用会自动重启。建议先保存当前正在编辑的内容，再继续安装。
+                      </p>
+                      <div className="mt-4 flex flex-wrap gap-3">
+                        <button
+                          type="button"
+                          onClick={() => void handleInstallUpdate()}
+                          disabled={installingUpdate}
+                          className="bg-primary hover:bg-primary/90 inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium text-white transition disabled:cursor-wait disabled:opacity-70"
+                        >
+                          {installingUpdate ? (
+                            <LoaderCircle className="size-4 animate-spin" />
+                          ) : (
+                            <Download className="size-4" />
+                          )}
+                          确认下载并重启
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAvailableUpdate(null)
+                            setUpdateDownloadState({
+                              stage: "idle",
+                              downloadedBytes: 0,
+                              totalBytes: null,
+                            })
+                          }}
+                          disabled={installingUpdate}
+                          className="border-border/70 hover:border-primary/50 bg-bg/90 inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          稍后处理
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {updateDownloadState.stage === "downloading" ||
+                  updateDownloadState.stage === "installing" ||
+                  updateDownloadState.stage === "restarting" ? (
+                    <div className="border-border/60 bg-bg/82 mt-4 rounded-[16px] border p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-medium">
+                          {updateDownloadState.stage === "downloading"
+                            ? "正在下载更新包"
+                            : updateDownloadState.stage === "installing"
+                              ? "正在安装更新"
+                              : "正在重启应用"}
+                        </p>
+                        <span className="text-muted text-xs">
+                          {downloadProgressPercent !== null
+                            ? `${downloadProgressPercent}%`
+                            : updateDownloadState.stage === "downloading"
+                              ? downloadProgressLabel
+                              : "请稍候"}
+                        </span>
+                      </div>
+                      <div className="bg-border/60 mt-3 h-2 overflow-hidden rounded-full">
+                        <div
+                          className="bg-primary h-full rounded-full transition-[width] duration-300"
+                          style={{
+                            width:
+                              updateDownloadState.stage === "downloading"
+                                ? `${downloadProgressPercent ?? 12}%`
+                                : "100%",
+                          }}
+                        />
+                      </div>
+                      <p className="text-muted mt-2 text-sm">
+                        {updateDownloadState.stage === "downloading"
+                          ? `已下载 ${downloadProgressLabel}`
+                          : updateDownloadState.stage === "installing"
+                            ? "安装包已下载完成，正在写入更新并准备重启。"
+                            : "更新已安装完成，应用即将重新启动。"}
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
               ) : null}
             </div>
           </div>
