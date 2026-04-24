@@ -177,12 +177,16 @@ fn capture_source_windows() -> Source {
             CloseHandle(handle);
             if ok != 0 && size > 0 {
                 buf.truncate(size as usize);
-                let full_path = OsString::from_wide(&buf).into_string().ok()?;
-                // Extract just the file name (e.g. "chrome.exe")
-                Path::new(&full_path)
-                    .file_name()
-                    .and_then(|n| n.to_str())
-                    .map(|s| s.to_string())
+                match OsString::from_wide(&buf).into_string() {
+                    Ok(full_path) => {
+                        // Extract just the file name (e.g. "chrome.exe")
+                        Path::new(&full_path)
+                            .file_name()
+                            .and_then(|n| n.to_str())
+                            .map(|s| s.to_string())
+                    }
+                    Err(_) => None,
+                }
             } else {
                 None
             }
