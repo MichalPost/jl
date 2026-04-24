@@ -545,7 +545,7 @@ mod tests {
             if input.trim().is_empty() {
                 prop_assert!(result.is_none());
             } else if let Some(value) = result {
-                prop_assert_eq!(value.trim(), value);
+                prop_assert_eq!(value.trim(), value.as_str());
                 prop_assert!(value.len() <= 500);
             }
         }
