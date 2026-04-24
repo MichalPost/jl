@@ -1,0 +1,63 @@
+name: 构建 iOS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 配置 Node.js & pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: 生成版本号
+        run: echo "VERSION=$(date +'%Y.%-m%d').${{ github.run_number }}" >> $GITHUB_ENV
+
+      - name: 构建移动端 Web 资源
+        run: pnpm build:mobile
+
+      - name: 添加 iOS 平台（如不存在）
+        if: ${{ !hashFiles('apps/mobile/ios/App/App.xcodeproj/project.pbxproj') }}
+        run: |
+          npx cap add ios
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile/ios/
+          git commit -m "ci: init iOS platform [skip ci]"
+          git push
+        working-directory: apps/mobile
+
+      - name: 同步 Capacitor 到 iOS
+        run: npx cap sync ios
+        working-directory: apps/mobile
+
+      - name: 构建模拟器版本（未签名）
+        run: |
+          xcodebuild \
+            -project apps/mobile/ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -derivedDataPath apps/mobile/ios/build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: 打包模拟器产物为 zip
+        run: |
+          cd apps/mobile/ios/build/Build/Products/Debug-iphonesimulator
+          zip -r App-ios-simulator.zip App.app
+
+      - name: 上传模拟器构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-${{ env.VERSION }}
+          path: apps/mobile/ios/build/Build/Products/Debug-iphonesimulator/App-ios-simulator.zip
+          retention-days: 7

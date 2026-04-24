@@ -1,0 +1,57 @@
+{
+  "productName": "ChemTools",
+  "version": "0.1.0",
+  "identifier": "com.chemtools.desktop",
+  "build": {
+    "frontendDist": "../../web/dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "pnpm --filter @chemtools/web dev",
+    "removeUnusedCommands": true
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "条码助手",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "dragDropEnabled": false
+      }
+    ],
+    "security": {
+      "capabilities": ["main-capability"],
+      "csp": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost data: blob:; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost; worker-src 'self' blob:; media-src 'self' data: blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "createUpdaterArtifacts": true,
+    "targets": "all",
+    "windows": {
+      "wix": {
+        "language": {
+          "zh-CN": {
+            "localePath": "wix/zh-CN.wxl"
+          }
+        }
+      }
+    },
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDYwMkU2RUZENzM5RTI3NTEKUldSUko1NXovVzR1WUJvZHdyMHBuU0RtNVRDVXpSNG16bys4MHAxa1hWcmF0eVVQMnBtakZDZnMK",
+      "endpoints": [
+        "https://github.com/MichalPost/de/releases/latest/download/latest.json"
+      ],
+      "dialog": false
+    }
+  }
+}

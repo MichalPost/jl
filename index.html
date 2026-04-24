@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Text Selection Task Manager</title>
+    <script>
+      ;(() => {
+        try {
+          const settings = JSON.parse(
+            localStorage.getItem("app-settings") || "{}",
+          )
+          let theme = settings.theme || "snow"
+          if (settings.followSystemTheme) {
+            theme = window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "midnight"
+              : "snow"
+          }
+          document.documentElement.setAttribute("data-theme", theme)
+        } catch (_error) {
+          document.documentElement.setAttribute("data-theme", "snow")
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

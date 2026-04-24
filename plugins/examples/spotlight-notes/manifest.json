@@ -1,0 +1,6 @@
+{
+  "id": "spotlight-notes",
+  "name": "Spotlight Notes Example",
+  "version": "0.1.0",
+  "extensionPoints": ["popup-action", "spotlight-source"]
+}

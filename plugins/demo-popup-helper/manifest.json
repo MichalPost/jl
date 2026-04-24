@@ -1,0 +1,6 @@
+{
+  "id": "demo-popup-helper",
+  "name": "Demo Popup Helper",
+  "version": "0.1.0",
+  "extensionPoints": ["popup-action", "post-save", "spotlight-source"]
+}

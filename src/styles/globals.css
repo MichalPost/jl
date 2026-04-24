@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg: var(--app-bg);
+  --color-surface: var(--app-surface);
+  --color-primary: var(--app-primary);
+  --color-primary-hover: var(--app-primary-hover);
+  --color-text: var(--app-text);
+  --color-muted: var(--app-muted);
+  --color-border: var(--app-border);
+  --blur-glass: var(--app-blur);
+}
+
+:root,
+[data-theme="snow"] {
+  --app-bg: oklch(100% 0 0 / 72%);
+  --app-surface: oklch(100% 0 0 / 88%);
+  --app-primary: oklch(58.5% 0.233 277.117);
+  --app-primary-hover: oklch(51.1% 0.262 276.966);
+  --app-text: oklch(20.8% 0.042 265.755);
+  --app-muted: oklch(55.4% 0.046 257.417);
+  --app-border: oklch(58.5% 0.233 277.117 / 14%);
+  --app-blur: 24px;
+}
+
+[data-theme="midnight"] {
+  --app-bg: oklch(14.5% 0.024 255 / 84%);
+  --app-surface: oklch(20.5% 0.03 252 / 90%);
+  --app-primary: oklch(70% 0.115 232);
+  --app-primary-hover: oklch(76% 0.13 225);
+  --app-text: oklch(95.5% 0.012 255);
+  --app-muted: oklch(75% 0.03 250);
+  --app-border: oklch(82% 0.024 248 / 16%);
+  --app-blur: 24px;
+}
+
+[data-theme="forest"] {
+  --app-bg: oklch(100% 0 0 / 72%);
+  --app-surface: oklch(100% 0 0 / 88%);
+  --app-primary: oklch(69.6% 0.17 162.48);
+  --app-primary-hover: oklch(59.6% 0.145 163.225);
+  --app-text: oklch(26.2% 0.051 172.552);
+  --app-muted: oklch(50.8% 0.118 165.612);
+  --app-border: oklch(69.6% 0.17 162.48 / 14%);
+  --app-blur: 24px;
+}
+
+[data-theme="ocean"] {
+  --app-bg: oklch(100% 0 0 / 72%);
+  --app-surface: oklch(100% 0 0 / 88%);
+  --app-primary: oklch(68.5% 0.169 237.323);
+  --app-primary-hover: oklch(58.8% 0.158 241.966);
+  --app-text: oklch(29.3% 0.066 243.157);
+  --app-muted: oklch(50% 0.134 242.749);
+  --app-border: oklch(68.5% 0.169 237.323 / 14%);
+  --app-blur: 24px;
+}
+
+[data-theme="rose"] {
+  --app-bg: oklch(100% 0 0 / 72%);
+  --app-surface: oklch(100% 0 0 / 88%);
+  --app-primary: oklch(64.5% 0.246 16.439);
+  --app-primary-hover: oklch(58.6% 0.253 17.585);
+  --app-text: oklch(27.1% 0.105 12.094);
+  --app-muted: oklch(51.4% 0.222 16.935);
+  --app-border: oklch(64.5% 0.246 16.439 / 14%);
+  --app-blur: 24px;
+}
+
+[data-theme="amber"] {
+  --app-bg: oklch(100% 0 0 / 72%);
+  --app-surface: oklch(100% 0 0 / 88%);
+  --app-primary: oklch(76.9% 0.188 70.08);
+  --app-primary-hover: oklch(66.6% 0.179 58.318);
+  --app-text: oklch(27.9% 0.077 45.635);
+  --app-muted: oklch(55.5% 0.163 48.998);
+  --app-border: oklch(76.9% 0.188 70.08 / 14%);
+  --app-blur: 24px;
+}
+
+[data-theme="slate"] {
+  --app-bg: oklch(100% 0 0 / 72%);
+  --app-surface: oklch(100% 0 0 / 88%);
+  --app-primary: oklch(55.4% 0.046 257.417);
+  --app-primary-hover: oklch(44.6% 0.043 257.281);
+  --app-text: oklch(12.9% 0.042 264.695);
+  --app-muted: oklch(37.2% 0.044 257.287);
+  --app-border: oklch(55.4% 0.046 257.417 / 14%);
+  --app-blur: 24px;
+}
+
+@custom-variant dark (&:where([data-theme=midnight], [data-theme=midnight] *));
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: transparent;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}

@@ -1,0 +1,24 @@
+name: Setup Node.js & pnpm
+description: Install Node.js, pnpm, and project dependencies
+
+inputs:
+  node-version:
+    description: Node.js version
+    default: '22'
+
+runs:
+  using: composite
+  steps:
+    - name: 配置 Node.js
+      uses: actions/setup-node@v5
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: 配置 pnpm
+      uses: pnpm/action-setup@v5
+      with:
+        version: latest
+
+    - name: 安装依赖
+      shell: bash
+      run: pnpm install

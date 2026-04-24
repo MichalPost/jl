@@ -1,0 +1,15 @@
+{
+  "identifier": "main-capability",
+  "description": "Default desktop capability set for the main ChemTools window.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "opener:default",
+    "dialog:default",
+    "fs:default",
+    "fs:allow-write-text-file",
+    "fs:allow-write-file",
+    "process:default",
+    "updater:default"
+  ]
+}
