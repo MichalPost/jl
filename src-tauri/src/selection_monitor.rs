@@ -546,7 +546,7 @@ mod tests {
                 prop_assert!(result.is_none());
             } else if let Some(value) = result {
                 prop_assert_eq!(value.trim(), value.as_str());
-                prop_assert!(value.len() <= 500);
+                prop_assert!(value.chars().count() <= 500);
             }
         }
     }
