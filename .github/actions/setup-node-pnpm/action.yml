@@ -1,24 +1,25 @@
-name: Setup Node.js & pnpm
-description: Install Node.js, pnpm, and project dependencies
+name: 配置 Node.js 与 pnpm
+description: 安装 Node.js、pnpm 并准备项目依赖
 
 inputs:
   node-version:
-    description: Node.js version
+    description: Node.js 版本
     default: "22"
 
 runs:
   using: composite
   steps:
+    - name: 配置 pnpm
+      uses: pnpm/action-setup@v5
+      with:
+        version: 10.28.2
+        run_install: false
+
     - name: 配置 Node.js
       uses: actions/setup-node@v5
       with:
         node-version: ${{ inputs.node-version }}
         cache: pnpm
-
-    - name: 配置 pnpm
-      uses: pnpm/action-setup@v5
-      with:
-        version: 10.28.2
 
     - name: 安装依赖
       shell: bash

@@ -1,4 +1,4 @@
-name: build-and-release-tauri
+name: 构建并发布桌面端
 
 on:
   push:
@@ -15,6 +15,7 @@ concurrency:
 
 jobs:
   prepare:
+    name: 准备发布信息
     runs-on: ubuntu-latest
     outputs:
       release_version: ${{ steps.version.outputs.release_version }}
@@ -62,13 +63,14 @@ jobs:
           prerelease: false
 
   verify:
+    name: 验证代码与构建
     needs: prepare
     runs-on: ubuntu-latest
     steps:
       - name: 检出代码
         uses: actions/checkout@v5
 
-      - name: 配置 Node.js & pnpm
+      - name: 配置 Node.js 与 pnpm
         uses: ./.github/actions/setup-node-pnpm
 
       - name: 安装 Rust
@@ -102,6 +104,7 @@ jobs:
         run: cargo test --lib -- --nocapture
 
   build_desktop:
+    name: 构建桌面应用
     needs: [prepare, verify]
     if: github.event_name != 'pull_request'
     strategy:
@@ -119,7 +122,7 @@ jobs:
       - name: 检出代码
         uses: actions/checkout@v5
 
-      - name: 配置 Node.js & pnpm
+      - name: 配置 Node.js 与 pnpm
         uses: ./.github/actions/setup-node-pnpm
 
       - name: 安装 Rust
@@ -174,6 +177,7 @@ jobs:
           updaterJsonPreferNsis: ${{ matrix.platform == 'windows-latest' }}
 
   publish_release:
+    name: 发布 Release
     needs: [prepare, build_desktop]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
@@ -188,6 +192,7 @@ jobs:
             --latest
 
   verify_update_feed:
+    name: 验证更新清单
     needs: [prepare, publish_release]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
@@ -210,6 +215,7 @@ jobs:
           grep -F "\"version\": \"$DESKTOP_VERSION\"" latest.json
 
   summary:
+    name: 输出发布摘要
     needs: [prepare, verify, build_desktop, publish_release, verify_update_feed]
     if: ${{ always() }}
     runs-on: ubuntu-latest
@@ -218,7 +224,7 @@ jobs:
         shell: bash
         run: |
           {
-            echo "## Desktop Release Summary"
+            echo "## 桌面端发布摘要"
             echo
             echo "- Tag: \`${{ needs.prepare.outputs.tag }}\`"
             echo "- Release: https://github.com/${{ github.repository }}/releases/tag/${{ needs.prepare.outputs.tag }}"
