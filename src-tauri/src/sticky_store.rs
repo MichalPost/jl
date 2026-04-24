@@ -1,10 +1,9 @@
 use std::{
-    fs,
     path::PathBuf,
     sync::Mutex,
 };
 
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use uuid::Uuid;
 
 use crate::{
@@ -144,7 +143,6 @@ pub fn update_sticky_position(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::StickyState;
     use std::{fs, time::{SystemTime, UNIX_EPOCH}};
 
     fn temp_file() -> PathBuf {

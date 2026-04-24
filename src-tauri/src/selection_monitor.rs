@@ -309,7 +309,7 @@ fn handle_mouse_release(app: &AppHandle) {
     };
 
     // Cache the selection for Ctrl+D quick-save
-    if let Ok(state) = app.try_state::<AppState>() {
+    if let Some(state) = app.try_state::<AppState>() {
         state.selection_state.remember(payload.clone());
     }
 
@@ -545,7 +545,7 @@ mod tests {
             if input.trim().is_empty() {
                 prop_assert!(result.is_none());
             } else if let Some(value) = result {
-                prop_assert_eq!(value, value.trim());
+                prop_assert_eq!(value.trim(), value);
                 prop_assert!(value.len() <= 500);
             }
         }
